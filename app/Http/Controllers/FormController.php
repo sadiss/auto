@@ -3,13 +3,15 @@
 namespace App\Http\Controllers;
 
 use App\Models\Form;
+use App\Models\PageViews;
 use Illuminate\Http\Request;
-
+use DB;
 class FormController extends Controller
 {
     //
     public function index()
     {
+        PageViews::createViewLog();
         return view('form');
 
     }
@@ -53,9 +55,22 @@ class FormController extends Controller
         return view('thank-you');
     }
 
-    public function getLeads()
+    public function getLeads(Request $request)
     {
-        $leads = Form::orderBy('created_at', 'desc')->get();
-        return view('Leads', ['leads'=> $leads]);
+
+        if(isset($_GET['startDate']) && isset($_GET['endDate'])){
+            $startDate = date('m-d-Y', strtotime($request->startDate));
+            $endDate = date('m-d-Y', strtotime($request->endDate));
+            $leads = DB::select("select * from `forms` where date(created_at) between '$request->startDate' and '$request->endDate' order by `created_at` desc");
+            $views = DB::select("select * from `page_views` where date(created_at) between '$request->startDate' and '$request->endDate' order by `created_at` desc");
+
+        } else {
+            $startDate = date('m-d-Y');
+            $endDate = date('m-d-Y');
+            $leads = Form::orderBy('created_at', 'desc')->get();
+            $views = PageViews::get();
+        }
+
+        return view('leads', ['leads'=> $leads, 'views'=> $views, 'startDate' => $startDate, 'endDate' => $endDate]);
     }
 }
